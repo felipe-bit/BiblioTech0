@@ -10,161 +10,105 @@ using Biblioteca.Models;
 
 namespace Biblioteca.Controllers
 {
+    using Microsoft.AspNetCore.Identity; // Adicione este using
+
     public class AvaliacoesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<IdentityUser> _userManager;
 
-        public AvaliacoesController(ApplicationDbContext context)
+        public AvaliacoesController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Avaliacoes
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? livroId)
         {
-            var applicationDbContext = _context.Avaliacoes.Include(a => a.Livro).Include(a => a.Usuario);
-            return View(await applicationDbContext.ToListAsync());
-        }
+            // Obtém o usuário logado
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Challenge();
 
-        // GET: Avaliacoes/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.AppUserId == Guid.Parse(user.Id));
+            if (usuario == null)
+                return Challenge();
 
-            var avaliacao = await _context.Avaliacoes
+            // Livros que o usuário já retirou e devolveu
+            var livrosRetirados = await _context.Movimentacoes
+                .Where(m => m.UsuarioId == usuario.UsuarioId && m.LivroDevolvido)
+                .Select(m => m.Livro)
+                .Distinct()
+                .ToListAsync();
+
+            // Se livroId foi passado, filtra para avaliação desse livro
+            ViewBag.LivroId = livroId;
+            ViewBag.LivrosRetirados = livrosRetirados;
+
+            // Lista avaliações do usuário logado
+            var avaliacoes = await _context.Avaliacoes
                 .Include(a => a.Livro)
-                .Include(a => a.Usuario)
-                .FirstOrDefaultAsync(m => m.AvaliacaoId == id);
-            if (avaliacao == null)
-            {
-                return NotFound();
-            }
+                .Where(a => a.UsuarioId == usuario.UsuarioId)
+                .ToListAsync();
 
-            return View(avaliacao);
+            return View(avaliacoes);
         }
 
         // GET: Avaliacoes/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create(int? livroId)
         {
-            ViewData["LivroId"] = new SelectList(_context.Livros, "LivroId", "LivroId");
-            ViewData["UsuarioId"] = new SelectList(_context.Usuarios, "UsuarioId", "UsuarioId");
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Challenge();
+
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.AppUserId == Guid.Parse(user.Id));
+            if (usuario == null)
+                return Challenge();
+
+            // Livros que o usuário já retirou e devolveu
+            var livrosRetirados = await _context.Movimentacoes
+            .Where(m => m.UsuarioId == usuario.UsuarioId)
+            .Select(m => m.Livro)
+            .Distinct()
+            .ToListAsync();
+
+            ViewData["LivroId"] = new SelectList(livrosRetirados, "LivroId", "Titulo", livroId);
             return View();
         }
 
         // POST: Avaliacoes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("AvaliacaoId,Nota,Comentario,DataAvaliacao,LivroId,UsuarioId")] Avaliacao avaliacao)
+        public async Task<IActionResult> Create([Bind("Nota,Comentario,LivroId")] Avaliacao avaliacao)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Challenge();
+
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.AppUserId == Guid.Parse(user.Id));
+            if (usuario == null)
+                return Challenge();
+
             if (ModelState.IsValid)
             {
+                avaliacao.UsuarioId = usuario.UsuarioId;
+                avaliacao.DataAvaliacao = DateTime.Now;
                 _context.Add(avaliacao);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["LivroId"] = new SelectList(_context.Livros, "LivroId", "LivroId", avaliacao.LivroId);
-            ViewData["UsuarioId"] = new SelectList(_context.Usuarios, "UsuarioId", "UsuarioId", avaliacao.UsuarioId);
+
+            // Recarrega os livros retirados para o select
+            var livrosRetirados = await _context.Movimentacoes
+                .Where(m => m.UsuarioId == usuario.UsuarioId && m.LivroDevolvido)
+                .Select(m => m.Livro)
+                .Distinct()
+                .ToListAsync();
+
+            ViewData["LivroId"] = new SelectList(livrosRetirados, "LivroId", "Titulo", avaliacao.LivroId);
             return View(avaliacao);
-        }
-
-        // GET: Avaliacoes/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var avaliacao = await _context.Avaliacoes.FindAsync(id);
-            if (avaliacao == null)
-            {
-                return NotFound();
-            }
-            ViewData["LivroId"] = new SelectList(_context.Livros, "LivroId", "LivroId", avaliacao.LivroId);
-            ViewData["UsuarioId"] = new SelectList(_context.Usuarios, "UsuarioId", "UsuarioId", avaliacao.UsuarioId);
-            return View(avaliacao);
-        }
-
-        // POST: Avaliacoes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("AvaliacaoId,Nota,Comentario,DataAvaliacao,LivroId,UsuarioId")] Avaliacao avaliacao)
-        {
-            if (id != avaliacao.AvaliacaoId)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(avaliacao);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!AvaliacaoExists(avaliacao.AvaliacaoId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["LivroId"] = new SelectList(_context.Livros, "LivroId", "LivroId", avaliacao.LivroId);
-            ViewData["UsuarioId"] = new SelectList(_context.Usuarios, "UsuarioId", "UsuarioId", avaliacao.UsuarioId);
-            return View(avaliacao);
-        }
-
-        // GET: Avaliacoes/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var avaliacao = await _context.Avaliacoes
-                .Include(a => a.Livro)
-                .Include(a => a.Usuario)
-                .FirstOrDefaultAsync(m => m.AvaliacaoId == id);
-            if (avaliacao == null)
-            {
-                return NotFound();
-            }
-
-            return View(avaliacao);
-        }
-
-        // POST: Avaliacoes/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var avaliacao = await _context.Avaliacoes.FindAsync(id);
-            if (avaliacao != null)
-            {
-                _context.Avaliacoes.Remove(avaliacao);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool AvaliacaoExists(int id)
-        {
-            return _context.Avaliacoes.Any(e => e.AvaliacaoId == id);
         }
     }
+
 }

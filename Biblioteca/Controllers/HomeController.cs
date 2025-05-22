@@ -44,8 +44,20 @@ namespace Biblioteca.Controllers
 
             ViewBag.LivrosMaisReservados = livrosMaisReservados;
 
+            // --- CÓDIGO DE AVALIAÇÕES DEVE FICAR AQUI ---
+            var avaliacoes = _context.Avaliacoes
+                .GroupBy(a => a.LivroId)
+                .Select(g => new { LivroId = g.Key, Media = g.Average(a => a.Nota), Qtd = g.Count() })
+                .ToList();
+
+            ViewBag.Avaliacoes = avaliacoes;
+            // --------------------------------------------
+
             return View(ultimosLivros);
         }
+
+
+
 
         public IActionResult Privacy()
         {

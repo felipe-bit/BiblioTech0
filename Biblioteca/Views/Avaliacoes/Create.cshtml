@@ -1,51 +1,52 @@
 ﻿@model Biblioteca.Models.Avaliacao
-
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Avaliar Livro";
 }
 
-<h1>Create</h1>
-
-<h4>Avaliacao</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="Nota" class="control-label"></label>
-                <input asp-for="Nota" class="form-control" />
-                <span asp-validation-for="Nota" class="text-danger"></span>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark d-flex align-items-center">
+                    <i class="bi bi-star-fill fs-3 me-2"></i>
+                    <h2 class="mb-0 fs-4">Avaliar Livro</h2>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create">
+                        <div class="mb-3">
+                            <label asp-for="LivroId" class="form-label fw-bold">Livro</label>
+                            <select asp-for="LivroId" class="form-select" asp-items="ViewBag.LivroId"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Nota" class="form-label fw-bold">Nota</label>
+                            <select asp-for="Nota" class="form-select">
+                                @for (int i = 0; i <= 5; i++)
+                                {
+                                    <option value="@i">@i @Html.Raw("&#9733;")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Comentario" class="form-label fw-bold">Comentário</label>
+                            <textarea asp-for="Comentario" class="form-control" rows="3" placeholder="Deixe seu comentário (opcional)"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-warning px-4">
+                                <i class="bi bi-star"></i> Avaliar
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="Comentario" class="control-label"></label>
-                <input asp-for="Comentario" class="form-control" />
-                <span asp-validation-for="Comentario" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="DataAvaliacao" class="control-label"></label>
-                <input asp-for="DataAvaliacao" class="form-control" />
-                <span asp-validation-for="DataAvaliacao" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="LivroId" class="control-label"></label>
-                <select asp-for="LivroId" class ="form-control" asp-items="ViewBag.LivroId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="UsuarioId" class="control-label"></label>
-                <select asp-for="UsuarioId" class ="form-control" asp-items="ViewBag.UsuarioId"></select>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

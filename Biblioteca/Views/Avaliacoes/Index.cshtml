@@ -1,59 +1,88 @@
 ﻿@model IEnumerable<Biblioteca.Models.Avaliacao>
-
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Minhas Avaliações";
+    var livrosRetirados = ViewBag.LivrosRetirados as IEnumerable<Biblioteca.Models.Livro>;
 }
 
-<h1>Index</h1>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark d-flex align-items-center">
+                    <i class="bi bi-star-fill fs-3 me-2"></i>
+                    <h2 class="mb-0 fs-4">Minhas Avaliações</h2>
+                </div>
+                <div class="card-body">
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nota)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Comentario)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.DataAvaliacao)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Livro)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Usuario)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nota)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Comentario)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.DataAvaliacao)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Livro.LivroId)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Usuario.UsuarioId)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.AvaliacaoId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.AvaliacaoId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.AvaliacaoId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+                    @if (livrosRetirados != null && livrosRetirados.Any())
+                    {
+                        <div class="mb-4">
+                            <h5 class="mb-3 text-secondary">Avaliar um livro retirado</h5>
+                            <ul class="list-group mb-3">
+                                @foreach (var livro in livrosRetirados)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">@livro.Titulo</span>
+                                        <a asp-action="Create" asp-route-livroId="@livro.LivroId" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-star"></i> Avaliar
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-4">Você ainda não retirou nenhum livro para avaliar.</div>
+                    }
+
+                    @if (!Model.Any())
+                    {
+                        <div class="alert alert-secondary text-center">Nenhuma avaliação realizada ainda.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle">
+                                <thead class="table-warning">
+                                    <tr>
+                                        <th>Livro</th>
+                                        <th>Nota</th>
+                                        <th>Comentário</th>
+                                        <th>Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model)
+                                    {
+                                        <tr>
+                                            <td class="fw-semibold">@item.Livro?.Titulo</td>
+                                            <td>
+                                                <span class="text-warning">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= item.Nota)
+                                                        {
+                                                            <i class="bi bi-star-fill"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-star"></i>
+                                                        }
+                                                    }
+                                                </span>
+                                                <span class="ms-1 text-secondary">(@item.Nota)</span>
+                                            </td>
+                                            <td>@item.Comentario</td>
+                                            <td>@item.DataAvaliacao.ToString("dd/MM/yyyy")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

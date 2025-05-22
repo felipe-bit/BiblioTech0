@@ -203,7 +203,7 @@ namespace Biblioteca.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("LivroId,Titulo,Autor,Descricao,Editora,DataPublicacao,NumeroPaginas,Quantidade,UrlCapa,ISBN10,ISBN13,GeneroId")] Livro livro)
+        public async Task<IActionResult> Edit(int id, [Bind("LivroId,Titulo,Autor,Descricao,Editora,DataPublicacao,NumeroPaginas,Quantidade,UrlCapa,ISBN10,ISBN13,GeneroId")] Livro livro, IFormFile NovaCapa)
         {
             if (id != livro.LivroId)
             {
@@ -214,6 +214,46 @@ namespace Biblioteca.Controllers
             {
                 try
                 {
+                    var livroExistente = await _context.Livros.AsNoTracking().FirstOrDefaultAsync(l => l.LivroId == id);
+                    if (livroExistente == null)
+                        return NotFound();
+
+                    // Se uma nova capa foi enviada, salva e atualiza o caminho
+                    if (NovaCapa != null && NovaCapa.Length > 0)
+                    {
+                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Books");
+                        var fileExtension = Path.GetExtension(NovaCapa.FileName);
+                        var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                        if (!Directory.Exists(uploadsFolder))
+                        {
+                            Directory.CreateDirectory(uploadsFolder);
+                        }
+
+                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await NovaCapa.CopyToAsync(fileStream);
+                        }
+
+                        // Remove a capa antiga se existir e for diferente da nova
+                        if (!string.IsNullOrEmpty(livroExistente.UrlCapa))
+                        {
+                            var oldPath = Path.Combine(Directory.GetCurrentDirectory(), livroExistente.UrlCapa.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                            if (System.IO.File.Exists(oldPath))
+                            {
+                                System.IO.File.Delete(oldPath);
+                            }
+                        }
+
+                        livro.UrlCapa = Path.Combine("Resources", "Books", uniqueFileName).Replace("\\", "/");
+                    }
+                    else
+                    {
+                        // Mantém a capa anterior se não foi enviada nova
+                        livro.UrlCapa = livroExistente.UrlCapa;
+                    }
+
                     _context.Update(livro);
                     await _context.SaveChangesAsync();
                 }
@@ -233,6 +273,7 @@ namespace Biblioteca.Controllers
             ViewData["GeneroId"] = new SelectList(_context.Generos.OrderBy(g => g.Nome), "GeneroId", "Nome", livro.GeneroId);
             return View(livro);
         }
+
 
         // GET: Livros/Delete/5
         public async Task<IActionResult> Delete(int? id)

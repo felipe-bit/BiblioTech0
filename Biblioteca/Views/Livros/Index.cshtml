@@ -131,32 +131,37 @@
                     </ul>
                 </nav>
             }
-            @foreach (var item in Model.Livros)
-            {
+        <tbody>
+                @if (Model.TotalPages > 1)
+                {
+                    // ... paginação ...
+                }
+                @foreach (var item in Model.Livros)
+                {
                 <tr>
                     <td>
-                        @if (!string.IsNullOrEmpty(item.UrlCapa))
-                        {
+                            @if (!string.IsNullOrEmpty(item.UrlCapa))
+                            {
                             <img src="@Url.Action("BuscarCapa", "Livros", new { id = item.LivroId })"
                                  class="img-thumbnail"
                                  style="width: 50px; height: 75px; object-fit: cover;" />
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                             <img src="~/img/sem-imagem.jpg" alt="Sem Capa" class="img-thumbnail" style="width: 50px; height: 75px; object-fit: cover;" />
-                        }
+                            }
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Titulo)
+                            @Html.DisplayFor(modelItem => item.Titulo)
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Autor)
+                            @Html.DisplayFor(modelItem => item.Autor)
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Editora)
+                            @Html.DisplayFor(modelItem => item.Editora)
                     </td>
                     <td>
-                        @Html.DisplayFor(modelItem => item.Genero.Nome)
+                            @Html.DisplayFor(modelItem => item.Genero.Nome)
                     </td>
                     <td>
                         <a asp-action="Edit" asp-route-id="@item.LivroId" class="text-light text-decoration-none me-2"><i class="bi bi-pencil-square"></i></a>
@@ -167,9 +172,11 @@
                                 <i class="bi bi-check-square"></i> Reservar
                             </button>
                         </form>
+
                     </td>
                 </tr>
-            }
+                }
         </tbody>
+
     </table>
 </div>
