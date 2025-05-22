@@ -311,7 +311,8 @@ namespace Biblioteca.Controllers
             return livros;
         }
 
-        [HttpGet]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancelar(int id)
         {
             var reserva = await _context.Reservas.FindAsync(id);
@@ -331,8 +332,7 @@ namespace Biblioteca.Controllers
 
             TempData["SuccessMessage"] = "Reserva Cancelada com Sucesso!";
 
-            // Redireciona para a action Retiradas do MovimentacoesController
-            return RedirectToAction("Retiradas", "Movimentacoes");
+            return RedirectToAction("Index", "Reservas");
         }
     }
 }

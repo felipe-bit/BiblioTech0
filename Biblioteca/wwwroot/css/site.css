@@ -18,6 +18,7 @@ html {
 }
 
 body {
+    background-color: #258cfb;
     margin: 0;
     padding: 0;
 }
@@ -56,6 +57,7 @@ header {
 
 #divLancamentos, #divTop5, #divAvalicao {
     max-height: 520px;
+    background-color: #258cfb;
     height: 520px;
 }
 
