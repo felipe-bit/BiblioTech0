@@ -321,18 +321,22 @@ namespace Biblioteca.Controllers
                 return NotFound();
             }
 
-            // Procurar o livro associado à reserva
+            // Devolve o livro ao estoque
             var livro = await _context.Livros.FindAsync(reserva.LivroId);
-
-            livro.Quantidade += 1; // Aumenta a quantidade do livro
+            if (livro != null)
+            {
+                livro.Quantidade += 1;
+                _context.Update(livro);
+            }
 
             reserva.Cancelada = true;
             _context.Update(reserva);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Reserva Cancelada com Sucesso!";
-
-            return RedirectToAction("Index", "Reservas");
+            TempData["SuccessMessage"] = "Reserva cancelada com sucesso!";
+            return RedirectToAction(nameof(Index));
         }
+
+
     }
 }

@@ -123,7 +123,7 @@ namespace Biblioteca.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("UsuarioId,NomeCompleto,CPF,Celular,DataNascimento,UrlFoto,AppUserId")] Usuario usuario)
+        public async Task<IActionResult> Create([Bind("UsuarioId,NomeCompleto,CPF,Celular,DataNascimento,UrlFoto,AppUserId")] Usuario usuario, IFormFile UrlFoto)
         {
             if (ModelState.IsValid)
             {
@@ -152,6 +152,26 @@ namespace Biblioteca.Controllers
                     ModelState.AddModelError("AppUserId", "Usuário não encontrado.");
                     return View(usuario);
                 }
+
+                // Salvar a foto na pasta Resources/Photos
+                if (UrlFoto != null && UrlFoto.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Photos");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var fileExtension = Path.GetExtension(UrlFoto.FileName);
+                    var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await UrlFoto.CopyToAsync(fileStream);
+                    }
+
+                    usuario.UrlFoto = Path.Combine("Resources", "Photos", uniqueFileName).Replace("\\", "/");
+                }
+
                 _context.Add(usuario);
                 await _context.SaveChangesAsync();
 
@@ -163,12 +183,15 @@ namespace Biblioteca.Controllers
             return View(usuario);
         }
 
-        // GET: Usuarios/Edit/5
+
         [Authorize]
-        public async Task<IActionResult> Edit()
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.AppUserId.ToString() == userId);
+            if (id == null)
+                return NotFound();
+
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.UsuarioId == id);
             if (usuario == null)
                 return NotFound();
 
@@ -180,18 +203,34 @@ namespace Biblioteca.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("UsuarioId,NomeCompleto,CPF,Celular,DataNascimento,UrlFoto,AppUserId")] Usuario usuario)
+        public async Task<IActionResult> Edit(int id, [Bind("UsuarioId,NomeCompleto,CPF,Celular,DataNascimento,UrlFoto,AppUserId")] Usuario usuario, IFormFile UrlFoto)
         {
-            if (id != usuario.UsuarioId)
-            {
-                return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(usuario);
+                    // Salvar a foto na pasta Resources/Photos
+                    if (UrlFoto != null && UrlFoto.Length > 0)
+                    {
+                        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Photos");
+                        if (!Directory.Exists(uploadsFolder))
+                            Directory.CreateDirectory(uploadsFolder);
+
+                        var fileExtension = Path.GetExtension(UrlFoto.FileName);
+                        var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                        using (var fileStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await UrlFoto.CopyToAsync(fileStream);
+                        }
+
+                        usuario.UrlFoto = Path.Combine("Resources", "Photos", uniqueFileName).Replace("\\", "/");
+
+                    }
+
+                    _context.Usuarios.Update(usuario);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -205,7 +244,8 @@ namespace Biblioteca.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+
+                return RedirectToAction("Index", "Home");
             }
             return View(usuario);
         }
@@ -228,6 +268,7 @@ namespace Biblioteca.Controllers
             return View(usuario);
         }
 
+
         // POST: Usuarios/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -247,6 +288,30 @@ namespace Biblioteca.Controllers
         {
             return _context.Usuarios.Any(e => e.UsuarioId == id);
         }
+
+        public IActionResult BuscarFoto(int id)
+        {
+            var usuario = _context.Usuarios.Find(id);
+            if (usuario == null || string.IsNullOrEmpty(usuario.UrlFoto))
+                return NotFound();
+
+            var caminho = Path.Combine(Directory.GetCurrentDirectory(), usuario.UrlFoto.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
+            if (!System.IO.File.Exists(caminho))
+                return NotFound();
+
+            var extensao = Path.GetExtension(caminho).ToLowerInvariant();
+            var contentType = extensao switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                _ => "application/octet-stream"
+            };
+
+            return PhysicalFile(caminho, contentType);
+        }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

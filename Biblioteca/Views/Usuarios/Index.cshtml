@@ -25,6 +25,7 @@
         <table class="table table-dark table-striped mt-3">
             <thead>
                 <tr>
+                    <th>Foto</th>
                     <th>@Html.DisplayNameFor(model => model.NomeCompleto)</th>
                     <th>@Html.DisplayNameFor(model => model.Celular)</th>
                     <th>@Html.DisplayNameFor(model => model.UrlFoto)</th>
@@ -37,20 +38,29 @@
                 @foreach (var item in Model)
                 {
                     <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.UrlFoto))
+                            {
+                                <img src="@Url.Action("BuscarFoto", "Usuarios", new { id = item.UsuarioId })"
+                                     class="rounded-circle"
+                                     style="width: 90px; height: 90px; object-fit: cover;" />
+
+                            }
+                        </td>
                         <td>@Html.DisplayFor(modelItem => item.NomeCompleto)</td>
                         <td>@Html.DisplayFor(modelItem => item.Celular)</td>
                         <td>@Html.DisplayFor(modelItem => item.UrlFoto)</td>
                         <td>
                             @(rolesPorUsuario != null && rolesPorUsuario.ContainsKey(item.UsuarioId)
-                                                    ? rolesPorUsuario[item.UsuarioId]
-                                                    : "Nenhuma")
-                    </td>
-                    <td>
-                        <a asp-action="Edit" asp-route-id="@item.UsuarioId" class="text-light text-decoration-none me-2"><i class="bi bi-pencil-square"></i></a>
-                        <a asp-action="Delete" asp-route-id="@item.UsuarioId" class="text-light text-decoration-none me-2"><i class="bi bi-trash3"></i></a>
-                    </td>
-                    <td>
-                        @if (rolesPorUsuario != null && rolesPorUsuario.ContainsKey(item.UsuarioId) && rolesPorUsuario[item.UsuarioId] == "Admin")
+                                ? rolesPorUsuario[item.UsuarioId]
+                                : "Nenhuma")
+                        </td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.UsuarioId" class="text-light text-decoration-none me-2"><i class="bi bi-pencil-square"></i></a>
+                            <a asp-action="Delete" asp-route-id="@item.UsuarioId" class="text-light text-decoration-none me-2"><i class="bi bi-trash3"></i></a>
+                        </td>
+                        <td>
+                            @if (rolesPorUsuario != null && rolesPorUsuario.ContainsKey(item.UsuarioId) && rolesPorUsuario[item.UsuarioId] == "Admin")
                             {
                                 <form asp-action="RemoverAdmin" asp-route-id="@item.UsuarioId" method="post" style="display:inline">
                                     <button type="submit" class="btn btn-danger text-decoration-none btn-admin">Remover Admin</button>
